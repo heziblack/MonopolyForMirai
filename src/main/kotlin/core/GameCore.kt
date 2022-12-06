@@ -296,11 +296,7 @@ class GameCore(
         // 清除子状态
         playerEntity.session.content=""
         playerEntity.session.statue=SubStatue.Null
-        val result = sb.toString()
-        if (result == ""){
-            println("！~大富翁Core：子状态处理出错~！")
-        }
-        return result
+        return sb.toString()
     }
     /**处理玩家回合中子状态*/
     fun subContentDeal(playerID:Long,playerAction: String):String{

@@ -20,7 +20,7 @@ object Monopoly : KotlinPlugin(
     JvmPluginDescription(
         id = "org.hezisudio.monopoly",
         name = "大富翁",
-        version = "0.1.0",
+        version = "0.1.1",
     ) {
         author("HeziBlack")
     }
