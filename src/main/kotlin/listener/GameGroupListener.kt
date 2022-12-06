@@ -2,6 +2,7 @@ package org.hezisudio.listener
 
 import kotlinx.coroutines.delay
 import net.mamoe.mirai.contact.Group
+import net.mamoe.mirai.contact.Member
 import net.mamoe.mirai.contact.remarkOrNameCardOrNick
 import net.mamoe.mirai.event.EventHandler
 import net.mamoe.mirai.event.ListenerHost
@@ -37,7 +38,7 @@ object GameGroupListener:ListenerHost {
                 val gameCore = Monopoly.findGameOrCreate(e.group.id)
                 if (gameCore.statue !== GameStatue.Closed) return
                 gameCore.hostOpenGame(e.sender)
-                e.group.sendMessage("游戏已启动")
+                e.group.sendMessage("游戏已启动，发送“加入”即可参与游戏")
             }
         },
         object :GameCmd(Regex("""[!！]结束大富翁""")){
@@ -60,16 +61,31 @@ object GameGroupListener:ListenerHost {
             override suspend fun cmdAction(e: GroupMessageEvent) {
                 val gameCore = Monopoly.findGameOrCreate(e.group.id)
                 if (gameCore.statue != GameStatue.Readying) return
-                if (gameCore.hasInGame(e.sender.id)) return
+                if (gameCore.hasInGame(e.sender.id)) {
+                    e.group.sendMessage(messageChainOf(
+                        At(e.sender),PlainText(" 您已加入游戏，无需重复加入")
+                    ))
+                    return
+                }
                 gameCore.playerJoin(e.sender.id)
-                e.group.sendMessage("成功加入游戏！")
+                e.group.sendMessage("成功加入游戏！当前玩家数：${gameCore.players.size}")
             }
         },
         object :GameCmd(Regex("""[!！]开始游戏""")){
             override suspend fun cmdAction(e: GroupMessageEvent) {
                 val gameCore = Monopoly.findGameOrCreate(e.group.id)
                 if (gameCore.statue != GameStatue.Readying) return
-                if (!gameCore.isGameHost(e.sender.id)) return
+                if (!gameCore.isGameHost(e.sender.id)) {
+                    val holder = getPlayerContact(gameCore.gameHolder, e.group)
+                    if (holder != null){
+                        e.group.sendMessage(messageChainOf(
+                            At(holder),PlainText("有玩家催促您，请开始游戏！")
+                        ))
+                    }else{
+                        e.group.sendMessage("请房主[${gameCore.gameHolder}]尽快开始游戏")
+                    }
+                    return
+                }
                 if(gameCore.startGame()){
                     val playerOnTermId = gameCore.playerOnTerm()
                     val playerOnTerm = e.group[playerOnTermId]
@@ -274,4 +290,11 @@ object GameGroupListener:ListenerHost {
             group.sendMessage("现在是[玩家${nextID}]的回合，请发送‘掷’进行下一步")
         }
     }
+    /**获取玩家在群聊中的对象*/
+    private fun getPlayerContact(id:Long,group: Group):Member?{
+        return group[id]
+    }
+
+
+
 }
